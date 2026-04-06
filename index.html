@@ -3,100 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTTV - Hashtag TV</title>
+    <title>HTTV — Hashtag TV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Capa de Sintonización -->
-    <div id="tuning-mask">
-        <div class="tuning-text">Sintonizando...</div>
-        <div id="tuning-perc">0%</div>
-        <div id="tuning-status">Contactando Señal Segura...</div>
+
+<!-- PANTALLA 1: Gestor de Listas -->
+<div id="screen-lists" class="screen active">
+    <div class="lists-header">
+        <h1 class="logo">HTTV<span>.</span></h1>
+        <p class="subtitle">Elige o crea tu lista de canales</p>
     </div>
 
-    <div id="app">
-        <!-- Pantalla de Inicio -->
-        <div id="start-screen">
-            <div class="hero-text">
-                <h1>HTTV<span>.</span></h1>
-                <p>Curador de videos por hashtag sin interrupciones.</p>
-                <button id="btn-start" class="btn-start">EMPEZAR TRANSMISIÓN</button>
-            </div>
+    <div class="lists-body">
+        <div id="lists-container"></div>
+        <button id="btn-add-list" class="btn-add">+ Nueva Lista</button>
+    </div>
+
+    <div class="lists-footer">
+        <div class="interval-control">
+            <label>Cambio cada:</label>
+            <select id="interval-select">
+                <option value="10000">10 seg</option>
+                <option value="30000">30 seg</option>
+                <option value="60000" selected>1 min</option>
+                <option value="120000">2 min</option>
+                <option value="300000">5 min</option>
+            </select>
         </div>
+        <button id="btn-play" class="btn-play" disabled>▶ SINTONIZAR</button>
+    </div>
+</div>
 
-        <main class="player-container">
-            <div id="player-a" class="player-video active"></div>
-            <div id="player-b" class="player-video"></div>
-            
-            <!-- Interfaz HUD -->
-            <div class="ui-overlay">
-                <header class="header">
-                    <a href="#" class="logo">HTTV<span>.</span></a>
-                    
-                    <div class="search-bar">
-                        <input type="text" id="hashtag-search" value="cyberpunk" placeholder="Hashtag...">
-                        <button id="search-btn" class="btn-icon">⚡</button>
-                    </div>
-                    
-                    <button id="open-sidebar" class="btn-lists">Mis Listas</button>
-                </header>
+<!-- PANTALLA 2: Cargando -->
+<div id="screen-loading" class="screen">
+    <div class="loading-content">
+        <div class="loader-ring"></div>
+        <div id="load-perc" class="load-perc">0%</div>
+        <div id="load-status" class="load-status">Buscando videos...</div>
+    </div>
+</div>
 
-                <div class="status-bar">
-                    <div class="current-tag">#cyberpunk</div>
-                    
-                    <div class="controls-mini">
-                        <div class="setting-mini">
-                            <label>CAMBIO:</label>
-                            <select id="interval-select">
-                                <option value="10000">10 Seg</option>
-                                <option value="20000">20 Seg</option>
-                                <option value="60000">1 Min</option>
-                                <option value="0">Off</option>
-                            </select>
-                        </div>
-
-                        <div class="setting-mini">
-                            <label>FUNDIDO:</label>
-                            <select id="transition-select">
-                                <option value="1000">1.0s</option>
-                                <option value="3000">3.0s</option>
-                                <option value="5000">5.0s</option>
-                            </select>
-                        </div>
-
-                        <button id="toggle-mixer" class="btn-mixer">Mixer: OFF</button>
-                        
-                        <div class="progress-wrap">
-                            <div id="progress-bar" class="progress-bar"></div>
-                        </div>
-                        
-                        <button id="btn-next" class="btn-icon-big">⏭</button>
-                        <a id="btn-source" href="#" target="_blank" class="btn-icon-mini">🔗</a>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- Barra Lateral -->
-        <aside id="sidebar-lists" class="sidebar">
-            <header class="sidebar-header">
-                <h2>Mis Canales</h2>
-                <button id="close-sidebar" class="btn-icon">×</button>
-            </header>
-            
-            <div id="lists-container"></div>
-            <button id="btn-add-list" class="btn-add">+ Nueva Lista</button>
-            
-            <div class="mixer-options">
-                <h3>Mixer</h3>
-                <div id="mixer-checkbox-group"></div>
-            </div>
-        </aside>
+<!-- PANTALLA 3: Reproductor -->
+<div id="screen-player" class="screen">
+    <div class="scanlines"></div>
+    <div id="player-wrap">
+        <div id="player"></div>
     </div>
 
-    <script src="main.js"></script>
+    <div class="player-hud-top">
+        <button id="btn-back" class="btn-hud">← Listas</button>
+        <div class="logo-small">HTTV<span>.</span></div>
+    </div>
+
+    <div class="player-hud-bottom">
+        <div id="now-playing" class="now-playing">#canal</div>
+        <div class="player-controls">
+            <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+            <button id="btn-next-video" class="btn-hud">▶▶ Siguiente</button>
+            <a id="btn-yt-link" href="#" target="_blank" class="btn-hud">YT ↗</a>
+        </div>
+    </div>
+</div>
+
+<script src="main.js"></script>
 </body>
 </html>

@@ -15,6 +15,7 @@
     <div class="lists-header">
         <h1 class="logo">HTTV<span>.</span></h1>
         <p class="subtitle">Elige o crea tu lista de canales</p>
+        <button id="btn-help" class="btn-help">? Ayuda</button>
     </div>
 
     <div class="lists-body">
@@ -31,6 +32,7 @@
                 <option value="60000" selected>1 min</option>
                 <option value="120000">2 min</option>
                 <option value="300000">5 min</option>
+                <option value="0">Manual</option>
             </select>
         </div>
         <button id="btn-play" class="btn-play" disabled>▶ SINTONIZAR</button>
@@ -77,6 +79,52 @@
             <button id="btn-next-video" class="btn-hud">▶▶</button>
             <button id="btn-save" class="btn-hud btn-save">♥ Guardar</button>
             <a id="btn-yt-link" href="#" target="_blank" class="btn-hud">YT ↗</a>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Manual de Uso -->
+<div id="modal-help" class="modal-overlay hidden">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Manual de Uso</h2>
+            <button id="btn-close-help" class="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <section>
+                <h3>📋 Listas de Canales</h3>
+                <p>Crea una lista con un nombre y escribe los temas separados por coma. La app buscará videos de esos temas en YouTube.</p>
+                <p><strong>Ejemplo:</strong> <code>reciclaje Chile 2026, basura cero Chile, ley REP Chile</code></p>
+            </section>
+            <section>
+                <h3>▶ Reproducción</h3>
+                <ul>
+                    <li>Elige una lista y presiona <strong>SINTONIZAR</strong>.</li>
+                    <li>La app buscará ~20 videos y comenzará a reproducirlos automáticamente.</li>
+                    <li>Usa el selector <strong>"Cambio cada"</strong> para definir cuánto dura cada video.</li>
+                    <li>En modo <strong>Manual</strong>, verás el tiempo restante del video en pantalla.</li>
+                </ul>
+            </section>
+            <section>
+                <h3>⌨️ Atajos de Teclado</h3>
+                <ul>
+                    <li><kbd>→</kbd> Siguiente video</li>
+                    <li><kbd>←</kbd> Video anterior</li>
+                    <li><kbd>Espacio</kbd> Pausar / Reanudar</li>
+                </ul>
+            </section>
+            <section>
+                <h3>♥ Guardar Favoritos</h3>
+                <p>Presiona <strong>♥ Guardar</strong> mientras ves un video para agregarlo a tu lista <em>"♥ Favoritos"</em>. Podrás sintonizarla como un canal propio.</p>
+            </section>
+            <section>
+                <h3>📡 Cambiar de Lista en Vivo</h3>
+                <p>Usa el selector de la barra superior del reproductor para cambiar de canal sin volver al menú.</p>
+            </section>
+            <section>
+                <h3>⚠️ Cuota Diaria</h3>
+                <p>La búsqueda en YouTube tiene un límite de <strong>80 búsquedas por día</strong> por dispositivo. Al llegar al límite, la app cambia automáticamente a su señal de archivo sin interrumpir la TV.</p>
+            </section>
         </div>
     </div>
 </div>

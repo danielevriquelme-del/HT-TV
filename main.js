@@ -118,6 +118,27 @@ document.addEventListener('change', e => {
 
 // --- Búsqueda de Videos ---
 const YT_API_KEY = 'AIzaSyBjwRmA_VCc4ZOuLy8pVWOxZsgqPKRUmLU';
+const DAILY_LIMIT = 80; // 80 búsquedas = ~8.000 unidades, bien bajo del límite de 10.000
+
+// --- Control de cuota diaria ---
+function getQuota() {
+    const today = new Date().toISOString().slice(0, 10); // "2026-04-09"
+    const stored = JSON.parse(localStorage.getItem('httv_quota') || '{}');
+    if (stored.date !== today) return { date: today, count: 0 };
+    return stored;
+}
+function incrementQuota() {
+    const q = getQuota();
+    q.count++;
+    localStorage.setItem('httv_quota', JSON.stringify(q));
+    return q.count;
+}
+function quotaExceeded() {
+    return getQuota().count >= DAILY_LIMIT;
+}
+function quotaRemaining() {
+    return Math.max(0, DAILY_LIMIT - getQuota().count);
+}
 
 async function fetchPlaylist(tags) {
     const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -133,8 +154,15 @@ async function fetchPlaylist(tags) {
               : q.includes('anime') ? 'anime'
               : 'default';
 
+    // Verificar cuota antes de llamar a la API
+    if (quotaExceeded()) {
+        setLoad(90, `⚠️ Cuota diaria alcanzada. Usando archivo local.`);
+        showQuotaNotice();
+        return shuffle([...MASTER[cat]]);
+    }
+
     try {
-        setLoad(40, 'Conectando a YouTube API...');
+        setLoad(40, `Conectando... (${quotaRemaining()} búsquedas restantes hoy)`);
         const url = `https://www.googleapis.com/youtube/v3/search?` +
             `part=id&type=video&q=${encodeURIComponent(query)}&` +
             `maxResults=20&videoEmbeddable=true&key=${YT_API_KEY}`;
@@ -142,6 +170,7 @@ async function fetchPlaylist(tags) {
         const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
+        incrementQuota(); // contar solo si fue exitosa
 
         if (data.items && data.items.length > 0) {
             const ids = data.items
@@ -158,6 +187,17 @@ async function fetchPlaylist(tags) {
     setLoad(90, 'Usando señal de archivo...');
     return shuffle([...MASTER[cat]]);
 }
+
+function showQuotaNotice() {
+    // Mostrar un aviso sutil en el HUD si ya estamos en el reproductor
+    const el = document.getElementById('now-playing');
+    if (!el) return;
+    const original = el.textContent;
+    el.textContent = '⚠️ Límite diario — Señal local activa';
+    el.style.color = '#ffaa00';
+    setTimeout(() => { el.textContent = original; el.style.color = ''; }, 4000);
+}
+
 
 function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -348,17 +388,29 @@ $('btn-back').addEventListener('click', () => {
 
 $('btn-next-video').addEventListener('click', nextVideo);
 
-// --- Flechas del teclado: → siguiente, ← anterior ---
+// --- Teclado: → siguiente, ← anterior, espacio pausa ---
+let isPaused = false;
 document.addEventListener('keydown', e => {
-    // Solo actuar si estamos en el reproductor
     if (!document.getElementById('screen-player').classList.contains('active')) return;
-    // No interferir si el foco está en un input
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
     if (e.key === 'ArrowRight') {
         nextVideo();
     } else if (e.key === 'ArrowLeft') {
         prevVideo();
+    } else if (e.key === ' ') {
+        e.preventDefault(); // evitar scroll de página
+        if (!player) return;
+        if (isPaused) {
+            player.playVideo();
+            if (intervalMs > 0) startTimer();
+            isPaused = false;
+        } else {
+            player.pauseVideo();
+            clearInterval(timerTick);
+            clearInterval(countdownTick);
+            isPaused = true;
+        }
     }
 });
 
@@ -409,5 +461,11 @@ $('btn-save').addEventListener('click', () => {
     }, 2000);
 });
 
+// --- Modal Ayuda ---
+$('btn-help').addEventListener('click', () => $('modal-help').classList.remove('hidden'));
+$('btn-close-help').addEventListener('click', () => $('modal-help').classList.add('hidden'));
+$('modal-help').addEventListener('click', e => { if (e.target === $('modal-help')) $('modal-help').classList.add('hidden'); });
+
 // --- Iniciar ---
 renderLists();
+

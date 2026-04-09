@@ -29,13 +29,15 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .logo span { color: var(--accent); }
 .subtitle { color: var(--muted); font-size: 1rem; margin-top: 8px; }
 
-.btn-help {
+.footer-actions { display: flex; align-items: center; gap: 12px; }
+
+.btn-manual {
     background: none; border: 1px solid var(--border);
-    color: var(--muted); padding: 8px 18px; border-radius: 20px;
-    font-family: 'Outfit', sans-serif; font-size: 0.85rem;
-    cursor: pointer; transition: 0.2s; margin-top: 12px;
+    color: var(--muted); padding: 14px 22px; border-radius: 50px;
+    font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: 0.2s; white-space: nowrap;
 }
-.btn-help:hover { border-color: #fff; color: #fff; }
+.btn-manual:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
 
 /* Modal */
 .modal-overlay {

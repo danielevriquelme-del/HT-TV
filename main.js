@@ -101,13 +101,15 @@ $('interval-select').addEventListener('change', () => {
 });
 
 // --- Búsqueda de Videos ---
+const YT_API_KEY = 'AIzaSyBjwRmA_VCc4ZOuLy8pVWOxZsgqPKRUmLU';
+
 async function fetchPlaylist(tags) {
     const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
     const query = tagList[Math.floor(Math.random() * tagList.length)] || 'cyberpunk 4k';
     
-    setLoad(20, 'Contactando servidor...');
+    setLoad(20, 'Buscando en YouTube...');
 
-    // Detectar categoría para el fallback del MASTER
+    // Categoría para fallback
     const q = query.toLowerCase();
     const cat = q.includes('cyber') || q.includes('neon') ? 'cyberpunk'
               : q.includes('natur') || q.includes('forest') || q.includes('drone') ? 'nature'
@@ -115,33 +117,28 @@ async function fetchPlaylist(tags) {
               : q.includes('anime') ? 'anime'
               : 'default';
 
-    const instances = [
-        'https://iv.ggtyler.dev',
-        'https://invidious.flokinet.to',
-        'https://inv.riverside.rocks',
-        'https://yewtu.be'
-    ];
+    try {
+        setLoad(40, 'Conectando a YouTube API...');
+        const url = `https://www.googleapis.com/youtube/v3/search?` +
+            `part=id&type=video&q=${encodeURIComponent(query)}&` +
+            `maxResults=20&videoEmbeddable=true&key=${YT_API_KEY}`;
+        
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const data = await res.json();
 
-    for (const instance of instances) {
-        const apiUrl = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video&page=1`;
-        setLoad(40, `Probando ${instance.split('//')[1]}...`);
-        try {
-            const res = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            if (!Array.isArray(data) || data.length === 0) continue;
-            const ids = data
-                .filter(v => v.videoId && v.lengthSeconds > 30)
-                .map(v => v.videoId)
-                .slice(0, 20);
-            if (ids.length > 5) {
-                setLoad(90, `${ids.length} videos encontrados ✓`);
-                return shuffle(ids);
-            }
-        } catch (_) { /* probar siguiente */ }
+        if (data.items && data.items.length > 0) {
+            const ids = data.items
+                .filter(item => item.id && item.id.videoId)
+                .map(item => item.id.videoId);
+            setLoad(90, `${ids.length} videos encontrados ✓`);
+            return shuffle(ids);
+        }
+    } catch (err) {
+        console.warn('YouTube API falló, usando archivo maestro:', err.message);
     }
 
-    // Fallback: usar Archivo Maestro
+    // Fallback: Archivo Maestro
     setLoad(90, 'Usando señal de archivo...');
     return shuffle([...MASTER[cat]]);
 }

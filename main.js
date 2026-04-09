@@ -25,6 +25,7 @@ let intervalMs = 60000;
 let player = null;
 let apiReady = false;
 let timerTick = null;
+let countdownTick = null;
 let timerMs = 0;
 let isFading = false;
 
@@ -97,7 +98,22 @@ $('lists-container').addEventListener('click', e => {
 
 $('interval-select').addEventListener('change', () => {
     intervalMs = parseInt($('interval-select').value);
+    // Sync player selector
+    const playerSel = $('interval-select-player');
+    if (playerSel) playerSel.value = $('interval-select').value;
     timerMs = 0;
+});
+
+// Cambio de intervalo EN VIVO desde el reproductor
+document.addEventListener('change', e => {
+    if (e.target.id !== 'interval-select-player') return;
+    intervalMs = parseInt(e.target.value);
+    // Sync lista screen
+    $('interval-select').value = e.target.value;
+    timerMs = 0;
+    clearInterval(timerTick);
+    if (intervalMs > 0) startTimer();
+    $('progress-bar').style.width = '0%';
 });
 
 // --- Búsqueda de Videos ---
@@ -174,9 +190,45 @@ $('btn-play').addEventListener('click', async () => {
 
     showScreen('screen-player');
     $('now-playing').textContent = '#' + (list.name || list.tags.split(',')[0]).toUpperCase().trim();
+
+    // Poblar el dropdown con todas las listas
+    populateListSwitcher(list.id);
+
     loadVideo(playlist[currentIndex]);
     startTimer();
 });
+
+function populateListSwitcher(activeId) {
+    const sel = $('list-switcher');
+    sel.innerHTML = lists.map(l =>
+        `<option value="${l.id}" ${l.id === activeId ? 'selected' : ''}>${l.name}</option>`
+    ).join('');
+}
+
+// Cambiar de lista en vivo
+$('list-switcher').addEventListener('change', async () => {
+    const listId = $('list-switcher').value;
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+
+    const wrap = $('player-wrap');
+    isFading = true;
+    clearInterval(timerTick);
+    clearInterval(countdownTick);
+    wrap.style.opacity = '0';
+    fadeVolume(100, 0, 600, async () => {
+        playlist = await fetchPlaylist(list.tags || list.name);
+        currentIndex = 0;
+        loadVideo(playlist[currentIndex]);
+        $('now-playing').textContent = '#' + list.name.toUpperCase().trim();
+        setTimeout(() => {
+            wrap.style.opacity = '1';
+            fadeVolume(0, 100, 600, () => { isFading = false; });
+            startTimer();
+        }, 1000);
+    });
+});
+
 
 // --- YouTube IFrame API ---
 const ytTag = document.createElement('script');
@@ -208,32 +260,66 @@ function loadVideo(id) {
 }
 
 // --- Temporizador ---
+// --- Timer + Countdown ---
 function startTimer() {
     clearInterval(timerTick);
+    clearInterval(countdownTick);
     timerMs = 0;
-    if (intervalMs === 0) return; // Modo manual
 
-    timerTick = setInterval(() => {
-        timerMs += 250;
-        const pct = Math.min((timerMs / intervalMs) * 100, 100);
-        $('progress-bar').style.width = pct + '%';
-        if (timerMs >= intervalMs) nextVideo();
-    }, 250);
+    const bar = $('progress-bar-wrap');
+    const cd  = $('countdown');
+
+    if (intervalMs === 0) {
+        // Modo Manual: mostrar countdown del video
+        bar.classList.add('hidden');
+        cd.classList.remove('hidden');
+        countdownTick = setInterval(() => {
+            if (!player || typeof player.getDuration !== 'function') return;
+            try {
+                const dur = player.getDuration();
+                const cur = player.getCurrentTime();
+                const rem = Math.max(0, Math.ceil(dur - cur));
+                const m = String(Math.floor(rem / 60)).padStart(2, '0');
+                const s = String(rem % 60).padStart(2, '0');
+                cd.textContent = `${m}:${s}`;
+            } catch(_) {}
+        }, 1000);
+    } else {
+        // Modo automático: mostrar barra de progreso
+        bar.classList.remove('hidden');
+        cd.classList.add('hidden');
+        timerTick = setInterval(() => {
+            timerMs += 250;
+            const pct = Math.min((timerMs / intervalMs) * 100, 100);
+            $('progress-bar').style.width = pct + '%';
+            if (timerMs >= intervalMs) nextVideo();
+        }, 250);
+    }
 }
 
-// --- Siguiente Video (con fade de audio) ---
+// --- Siguiente Video (con fade de audio y visual) ---
 function nextVideo() {
     if (isFading) return;
     isFading = true;
     clearInterval(timerTick);
 
-    fadeVolume(100, 0, 1000, () => {
+    const wrap = document.getElementById('player-wrap');
+
+    // 1. Fade OUT (audio + visual)
+    wrap.style.opacity = '0';
+    fadeVolume(100, 0, 800, () => {
+        // 2. Cambiar video
         currentIndex = (currentIndex + 1) % playlist.length;
         loadVideo(playlist[currentIndex]);
+
+        // 3. Esperar un momento y Fade IN
         setTimeout(() => {
-            fadeVolume(0, 100, 1000, () => { isFading = false; });
+            wrap.style.opacity = '1';
+            fadeVolume(0, 100, 800, () => {
+                isFading = false;
+            });
             startTimer();
-        }, 1000); // dar tiempo para que el video cargue
+        }, 1200); // tiempo para que el nuevo video empiece a cargar
     });
 }
 
@@ -255,11 +341,73 @@ function fadeVolume(from, to, duration, callback) {
 // --- Controles del Player ---
 $('btn-back').addEventListener('click', () => {
     clearInterval(timerTick);
+    clearInterval(countdownTick);
     try { player.stopVideo(); } catch(_) {}
     showScreen('screen-lists');
 });
 
 $('btn-next-video').addEventListener('click', nextVideo);
+
+// --- Flechas del teclado: → siguiente, ← anterior ---
+document.addEventListener('keydown', e => {
+    // Solo actuar si estamos en el reproductor
+    if (!document.getElementById('screen-player').classList.contains('active')) return;
+    // No interferir si el foco está en un input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+    if (e.key === 'ArrowRight') {
+        nextVideo();
+    } else if (e.key === 'ArrowLeft') {
+        prevVideo();
+    }
+});
+
+function prevVideo() {
+    if (isFading) return;
+    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    const wrap = document.getElementById('player-wrap');
+    isFading = true;
+    wrap.style.opacity = '0';
+    fadeVolume(100, 0, 800, () => {
+        loadVideo(playlist[currentIndex]);
+        setTimeout(() => {
+            wrap.style.opacity = '1';
+            fadeVolume(0, 100, 800, () => { isFading = false; });
+            startTimer();
+        }, 1200);
+    });
+}
+
+
+// --- Guardar video actual en Favoritos ---
+$('btn-save').addEventListener('click', () => {
+    const videoId = playlist[currentIndex];
+    if (!videoId) return;
+
+    // Buscar o crear la lista "Favoritos"
+    let favList = lists.find(l => l.name === '♥ Favoritos');
+    if (!favList) {
+        favList = { id: 'favoritos', name: '♥ Favoritos', tags: '' };
+        lists.unshift(favList);
+    }
+
+    // Agregar el ID si no está ya guardado
+    const savedIds = favList.tags ? favList.tags.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (!savedIds.includes(videoId)) {
+        savedIds.push(videoId);
+        favList.tags = savedIds.join(', ');
+        saveLists();
+    }
+
+    // Feedback visual
+    const btn = $('btn-save');
+    btn.textContent = '✓ Guardado';
+    btn.classList.add('saved');
+    setTimeout(() => {
+        btn.textContent = '♥ Guardar';
+        btn.classList.remove('saved');
+    }, 2000);
+});
 
 // --- Iniciar ---
 renderLists();

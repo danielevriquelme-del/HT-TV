@@ -55,14 +55,27 @@
 
     <div class="player-hud-top">
         <button id="btn-back" class="btn-hud">← Listas</button>
+        <select id="list-switcher" class="btn-hud list-switcher"></select>
         <div class="logo-small">HTTV<span>.</span></div>
     </div>
 
     <div class="player-hud-bottom">
         <div id="now-playing" class="now-playing">#canal</div>
         <div class="player-controls">
-            <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-            <button id="btn-next-video" class="btn-hud">▶▶ Siguiente</button>
+            <div id="progress-area">
+                <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+                <div id="countdown" class="countdown hidden">--:--</div>
+            </div>
+            <select id="interval-select-player" class="btn-hud interval-player">
+                <option value="10000">10 seg</option>
+                <option value="30000">30 seg</option>
+                <option value="60000" selected>1 min</option>
+                <option value="120000">2 min</option>
+                <option value="300000">5 min</option>
+                <option value="0">Manual</option>
+            </select>
+            <button id="btn-next-video" class="btn-hud">▶▶</button>
+            <button id="btn-save" class="btn-hud btn-save">♥ Guardar</button>
             <a id="btn-yt-link" href="#" target="_blank" class="btn-hud">YT ↗</a>
         </div>
     </div>
